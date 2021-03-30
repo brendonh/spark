@@ -5,7 +5,8 @@ authors = ["Hilmar Wiegand <me@hwgnd.de>", "Amethyst Foundation <contact@amethys
 edition = "2018"
 
 [dependencies]
-amethyst = {version = "0.15.2"} #, features = ["no-slow-safety-checks"]}
+amethyst = { git = "https://github.com/amethyst/amethyst/", branch="main" }
+# {version = "0.15.2"} #, features = ["no-slow-safety-checks"]}
 log = { version = "0.4.8", features = ["serde"] }
 
 [features]
