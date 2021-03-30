@@ -1,16 +1,8 @@
 [package]
-name = "amethyst-starter-2d"
-version = "0.2.0"
-authors = ["Hilmar Wiegand <me@hwgnd.de>", "Amethyst Foundation <contact@amethyst.rs>"]
+name = "spark"
+version = "0.0.0"
+authors = ["Brendon Hogger <brendonh@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-amethyst = { git = "https://github.com/amethyst/amethyst/", branch="main" }
-# {version = "0.15.2"} #, features = ["no-slow-safety-checks"]}
-log = { version = "0.4.8", features = ["serde"] }
-
-[features]
-default = ["vulkan"]
-empty = ["amethyst/empty"]
-metal = ["amethyst/metal"]
-vulkan = ["amethyst/vulkan"]
+bevy = { version = "0.4", features = ["dynamic"] }
