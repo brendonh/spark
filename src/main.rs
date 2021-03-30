@@ -85,8 +85,6 @@ fn setup(
     let player_handle = asset_server.get_handle("sprites/ships/1B.png");
     let player_index = texture_atlas.get_texture_index(&player_handle).unwrap();
 
-    warn!("Player sprite: {:?}", player_index);
-
     let atlas_handle = texture_atlases.add(texture_atlas);
 
     commands
