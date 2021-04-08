@@ -1,133 +1,90 @@
 use bevy::{
     prelude::*,
-    asset::LoadState,
-    sprite::TextureAtlasBuilder,
+    app::AppExit,
+    input::{
+        ElementState,
+        keyboard::KeyboardInput,
+    },
+    pbr::AmbientLight,
 };
 
-// mod states;
-// mod ships;
+use bevy_rapier2d::{
+    physics::{
+        RapierConfiguration,
+        RapierPhysicsPlugin,
+        EventQueue,
+    },
+    rapier::na::Vector2,
+};
+
+mod ships;
 
 fn main() {
 
-    static STATE: &str = "what";
-
     App::build()
-        .add_resource(WindowDescriptor {
+        .insert_resource(WindowDescriptor {
             title: "Spark".to_string(),
+            width: 1440.0,
+            height: 900.0,
             ..Default::default()
         })
 
-        .init_resource::<Sprites>()
-
         .add_plugins(DefaultPlugins)
-        .add_resource(State::new(AppState::Setup))
+        .add_plugin(RapierPhysicsPlugin)
 
-        .add_stage_before(
-            stage::UPDATE, STATE,
-            StateStage::<AppState>::default()
-        )
+        .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
 
-        .on_state_enter(STATE, AppState::Setup, load_textures.system())
-        .on_state_update(STATE, AppState::Setup, check_textures.system())
+        .add_startup_system(setup.system())
+        .add_startup_system(ships::ship::make_ships_system.system())
 
-        .on_state_enter(STATE, AppState::Space, setup.system())
+        .add_system(ships::tiles::make_tiles_system.system())
 
+        .add_system(exit_on_esc_system.system())
+        .add_system(print_events.system())
         .run();
 }
 
-#[derive(Debug, Clone)]
-enum AppState {
-    Setup,
-    Space,
-}
-
-#[derive(Default)]
-struct Sprites {
-    handles: Vec<HandleUntyped>
-}
-
-fn load_textures(mut sprites: ResMut<Sprites>, asset_server: Res<AssetServer>) {
-    info!("Loading ship sprites");
-    sprites.handles = asset_server.load_folder("sprites/ships").unwrap();
-}
-
-fn check_textures(
-    mut state: ResMut<State<AppState>>,
-    sprites: ResMut<Sprites>,
-    asset_server: Res<AssetServer>,
-) {
-    if let LoadState::Loaded =
-        asset_server.get_group_load_state(sprites.handles.iter().map(|handle| handle.id))
-    {
-        info!("Load finished");
-        state.set_next(AppState::Space).unwrap();
-    } else {
-        warn!("Still loading ...");
-    }
-}
-
-
 fn setup(
-    commands: &mut Commands,
-    sprites: Res<Sprites>,
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut textures: ResMut<Assets<Texture>>,
+    mut commands: Commands,
+    mut rapier_config: ResMut<RapierConfiguration>,
+    mut ambient: ResMut<AmbientLight>,
 ) {
-    let mut texture_atlas_builder = TextureAtlasBuilder::default();
-    for handle in sprites.handles.iter() {
-        let texture = textures.get(handle).unwrap();
-        texture_atlas_builder.add_texture(handle.clone_weak().typed::<Texture>(), texture);
-    }
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.orthographic_projection.scale = 0.05;
+    commands.spawn_bundle(camera);
 
-    let texture_atlas = texture_atlas_builder.finish(&mut textures).unwrap();
+    ambient.brightness = 1.0;
+    // commands.spawn_bundle(LightBundle {
+    //     transform: Transform::from_xyz(5.0, 0.0, 10.0),
+    //     ..Default::default()
+    // });
 
-    let player_handle = asset_server.get_handle("sprites/ships/1B.png");
-    let player_index = texture_atlas.get_texture_index(&player_handle).unwrap();
-
-    let atlas_handle = texture_atlases.add(texture_atlas);
-
-    commands
-        .spawn(Camera2dBundle::default())
-        .spawn(SpriteSheetBundle {
-            transform: Transform {
-                translation: Vec3::new(0.0, 0.0, 0.0),
-                ..Default::default()
-            },
-            sprite: TextureAtlasSprite::new(player_index as u32),
-            texture_atlas: atlas_handle,
-            ..Default::default()
-        });
+    rapier_config.gravity = Vector2::zeros();
 }
 
-// amethyst::start_logger(Default::default());
 
-//     let app_root = application_root_dir()?;
 
-//     let resources = app_root.join("assets");
-//     let display_config_path = app_root.join("config/display_config.ron");
-//     let key_bindings_path = app_root.join("config/input.ron");
+fn exit_on_esc_system(
+    mut keyboard_input_events: EventReader<KeyboardInput>,
+    mut app_exit_events: EventWriter<AppExit>,
+) {
+    for event in keyboard_input_events.iter() {
+        if let Some(key_code) = event.key_code {
+            if event.state == ElementState::Pressed && key_code == KeyCode::Escape {
+                info!("Exiting");
+                app_exit_events.send(AppExit);
+            }
+        }
+    }
+}
 
-//     let mut dispatcher = DispatcherBuilder::default();
 
-//     dispatcher.add_bundle(LoaderBundle);
-//     dispatcher.add_bundle(TransformBundle::default());
-//     dispatcher.add_bundle(
-//         InputBundle::new()
-//             .with_bindings_from_file(&key_bindings_path)?,
-//     );
-//     dispatcher.add_bundle(
-//         RenderingBundle::<DefaultBackend>::new()
-//             .with_plugin(
-//                 RenderToWindow::from_config_path(display_config_path)?
-//                     .with_clear(ClearColor {float32: [0.0, 0.0, 0.0, 1.0],
-//                 }),
-//             )
-//             .with_plugin(RenderFlat2D::default()),
-//     );
+fn print_events(events: Res<EventQueue>) {
+    while let Ok(intersection_event) = events.intersection_events.pop() {
+        println!("Received intersection event: {:?}", intersection_event);
+    }
 
-//     let game = Application::new(resources, states::space::SpaceState, dispatcher)?;
-//     game.run();
-
-//     Ok(())
-// }
+    while let Ok(contact_event) = events.contact_events.pop() {
+        println!("Received contact event: {:?}", contact_event);
+    }
+}
