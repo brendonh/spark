@@ -2,11 +2,9 @@
 name = "spark"
 version = "0.0.0"
 authors = ["Brendon Hogger <brendonh@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-bevy = { version = "0.5", features = ["dynamic"] }
-bevy_rapier2d = { version = "0.9.0" }
-
-#bevy = { git = "https://github.com/bevyengine/bevy", branch = "main" }
-#bevy_rapier2d = { git = "https://github.com/alec-deason/bevy_rapier/", branch = "tracking_changes_for_bevy_0.5" }
+bevy = { version = "0.7", features = ["dynamic"] }
+heron = { version = "3.0.0", features = ["2d"] }
+#bevy_rapier2d = { version = "0.12.1", features = [ "simd-stable" ] }

@@ -5,23 +5,15 @@ use bevy::{
         ElementState,
         keyboard::KeyboardInput,
     },
-    pbr::AmbientLight,
 };
 
-use bevy_rapier2d::{
-    physics::{
-        RapierConfiguration,
-        RapierPhysicsPlugin,
-        EventQueue,
-    },
-    rapier::na::Vector2,
-};
+use heron::prelude::*;
 
 mod ships;
 
 fn main() {
 
-    App::build()
+    App::new()
         .insert_resource(WindowDescriptor {
             title: "Spark".to_string(),
             width: 1440.0,
@@ -30,39 +22,43 @@ fn main() {
         })
 
         .add_plugins(DefaultPlugins)
-        .add_plugin(RapierPhysicsPlugin)
+        .add_plugin(PhysicsPlugin::default())
 
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
 
-        .add_startup_system(setup.system())
-        .add_startup_system(ships::ship::make_ships_system.system())
+        .add_startup_system(setup)
+        .add_startup_system(ships::ship::make_ships_system)
 
-        .add_system(ships::tiles::make_tiles_system.system())
+        .add_system(ships::tiles::make_tiles_system)
 
-        .add_system(exit_on_esc_system.system())
-        .add_system(print_events.system())
+        .add_system(exit_on_esc_system)
+        .add_system(print_events)
         .run();
 }
 
 fn setup(
     mut commands: Commands,
-    mut rapier_config: ResMut<RapierConfiguration>,
-    mut ambient: ResMut<AmbientLight>,
 ) {
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.orthographic_projection.scale = 0.05;
-    commands.spawn_bundle(camera);
 
-    ambient.brightness = 1.0;
-    // commands.spawn_bundle(LightBundle {
-    //     transform: Transform::from_xyz(5.0, 0.0, 10.0),
-    //     ..Default::default()
+    // commands.spawn_bundle(PointLightBundle {
+    //     transform: Transform::from_xyz(50.0, 50.0, 50.0),
+    //     point_light: PointLight {
+    //         intensity: 600000.,
+    //         range: 100.,
+    //         ..default()
+    //     },
+    //     ..default()
     // });
 
-    rapier_config.gravity = Vector2::zeros();
+    commands.spawn_bundle(OrthographicCameraBundle {
+        transform: Transform::from_xyz(0.0, 0.0, 100.0).looking_at(Vec3::default(), Vec3::Y),
+        orthographic_projection: OrthographicProjection {
+            scale: 0.03,
+            ..default()
+        },
+        ..OrthographicCameraBundle::new_3d()
+    });
 }
-
-
 
 fn exit_on_esc_system(
     mut keyboard_input_events: EventReader<KeyboardInput>,
@@ -79,12 +75,17 @@ fn exit_on_esc_system(
 }
 
 
-fn print_events(events: Res<EventQueue>) {
-    while let Ok(intersection_event) = events.intersection_events.pop() {
-        println!("Received intersection event: {:?}", intersection_event);
-    }
-
-    while let Ok(contact_event) = events.contact_events.pop() {
-        println!("Received contact event: {:?}", contact_event);
+fn print_events(
+    mut events: EventReader<CollisionEvent>,
+) {
+    for event in events.iter() {
+        match event {
+            CollisionEvent::Started(data1, data2) => {
+                println!("Entity {:?} and {:?} started to collide", data1.rigid_body_entity(), data2.rigid_body_entity())
+            }
+            CollisionEvent::Stopped(data1, data2) => {
+                println!("Entity {:?} and {:?} stopped to collide", data1.rigid_body_entity(), data2.rigid_body_entity())
+            }
+        }
     }
 }

@@ -2,16 +2,15 @@ use std::collections::BTreeMap;
 
 use bevy::{
     prelude::*,
+    prelude::shape,
     reflect::TypeUuid,
 };
 
-use bevy_rapier2d::{
-    rapier::geometry::{SharedShape, ColliderBuilder},
-    na::Isometry2,
-};
+use heron::prelude::*;
 
 type Pos = (i32, i32);
 
+#[derive(Component)]
 pub struct TileMarker;
 
 #[derive(TypeUuid)]
@@ -28,7 +27,11 @@ impl FromWorld for TileParts {
 
         let mut materials = world.get_resource_mut::<Assets<StandardMaterial>>().unwrap();
         let mut mats = BTreeMap::new();
-        mats.insert("gray", materials.add(Color::rgb(0.6, 0.6, 0.6).into()));
+        mats.insert("gray", materials.add(StandardMaterial {
+            base_color: Color::hex("999999").unwrap(),
+            unlit: true,
+            ..default()
+        }));
 
         TileParts{
             mesh: mesh,
@@ -49,7 +52,7 @@ impl From<Pos> for Tile {
 }
 
 
-#[derive(Clone)]
+#[derive(Component)]
 pub struct TileSet {
     pub tiles: BTreeMap<Pos, Tile>,
 }
@@ -73,17 +76,6 @@ impl From<Vec<Pos>> for TileSet {
 }
 
 
-impl From<&TileSet> for SharedShape {
-    fn from(tileset: &TileSet) -> Self {
-        let shapes = tileset.tiles.values().map(|tile| {
-            let (x, y) = tile.pos;
-            (Isometry2::translation(x as f32, y as f32), SharedShape::cuboid(0.5, 0.5))
-        }).collect();
-        SharedShape::compound(shapes)
-    }
-}
-
-
 pub fn make_tiles_system(
     mut commands: Commands,
     mut query: Query<(Entity, &TileSet), Added<TileSet>>,
@@ -93,19 +85,30 @@ pub fn make_tiles_system(
         for tile in tileset.tiles.values() {
 
             let (x, y) = tile.pos;
-            let collider = ColliderBuilder::new(tileset.into());
 
-            commands.spawn()
-                .insert(TileMarker)
-                .insert(Parent(ship))
-                .insert(collider)
-                .insert_bundle(
+            let tile = commands.spawn_bundle((
+                TileMarker,
+                CollisionShape::Cuboid {
+                    half_extends: Vec3::new( 0.5, 0.5, 0.0 ),
+                    border_radius: None,
+                }
+            )
+            ).insert_bundle(
+                TransformBundle {
+                    local: Transform::from_xyz(x as f32, y as f32, 0.0),
+                    ..default()
+                }
+            ).with_children(|parent| {
+                parent.spawn_bundle(
                     PbrBundle {
                         mesh: tile_parts.mesh.clone(),
                         material: tile_parts.materials.get("gray").unwrap().clone(),
-                        transform: Transform::from_xyz(x as f32, y as f32, 0.0),
-                        ..Default::default()
-                    });
+                        ..default()
+                    }
+                );
+            }).id();
+
+            commands.entity(ship).add_child(tile);
         }
     }
 }
