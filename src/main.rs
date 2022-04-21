@@ -9,7 +9,9 @@ use bevy::{
 
 use heron::prelude::*;
 
+mod common;
 mod ships;
+mod planets;
 
 fn main() {
 
@@ -27,12 +29,15 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
 
         .add_startup_system(setup)
+        .add_startup_system(planets::planet::make_planets_system)
         .add_startup_system(ships::ship::make_ships_system)
 
         .add_system(ships::tiles::make_tiles_system)
 
+        .add_system(planets::planet::apply_gravity)
+
         .add_system(exit_on_esc_system)
-        .add_system(print_events)
+//        .add_system(print_events)
         .run();
 }
 
