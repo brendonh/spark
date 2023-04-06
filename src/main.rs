@@ -2,12 +2,12 @@ use bevy::{
     prelude::*,
     app::AppExit,
     input::{
-        ElementState,
+        ButtonState,
         keyboard::KeyboardInput,
     },
 };
 
-use heron::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 mod common;
 mod ships;
@@ -16,15 +16,17 @@ mod planets;
 fn main() {
 
     App::new()
-        .insert_resource(WindowDescriptor {
-            title: "Spark".to_string(),
-            width: 1440.0,
-            height: 900.0,
-            ..Default::default()
-        })
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Spark".to_string(),
+                resolution: bevy::window::WindowResolution::new(1440.0, 900.0),
+                ..default()
+            }),
+            ..default()
+        }))
 
-        .add_plugins(DefaultPlugins)
-        .add_plugin(PhysicsPlugin::default())
+        //.add_plugins(DefaultPlugins)
+        .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
 
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
 
@@ -55,13 +57,14 @@ fn setup(
     //     ..default()
     // });
 
-    commands.spawn_bundle(OrthographicCameraBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 0.0, 100.0).looking_at(Vec3::default(), Vec3::Y),
-        orthographic_projection: OrthographicProjection {
-            scale: 0.03,
+        projection: OrthographicProjection {
+            scale: 30.0,
+            scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(1.0),
             ..default()
-        },
-        ..OrthographicCameraBundle::new_3d()
+        }.into(),
+        ..default()
     });
 }
 
@@ -71,7 +74,7 @@ fn exit_on_esc_system(
 ) {
     for event in keyboard_input_events.iter() {
         if let Some(key_code) = event.key_code {
-            if event.state == ElementState::Pressed && key_code == KeyCode::Escape {
+            if event.state == ButtonState::Pressed && key_code == KeyCode::Escape {
                 info!("Exiting");
                 app_exit_events.send(AppExit);
             }
@@ -80,17 +83,17 @@ fn exit_on_esc_system(
 }
 
 
-fn print_events(
-    mut events: EventReader<CollisionEvent>,
-) {
-    for event in events.iter() {
-        match event {
-            CollisionEvent::Started(data1, data2) => {
-                println!("Entity {:?} and {:?} started to collide", data1.rigid_body_entity(), data2.rigid_body_entity())
-            }
-            CollisionEvent::Stopped(data1, data2) => {
-                println!("Entity {:?} and {:?} stopped to collide", data1.rigid_body_entity(), data2.rigid_body_entity())
-            }
-        }
-    }
-}
+// fn print_events(
+//     mut events: EventReader<CollisionEvent>,
+// ) {
+//     for event in events.iter() {
+//         match event {
+//             CollisionEvent::Started(entity1, entity2, flags) => {
+//                 println!("Entity {:?} and {:?} started to collide: {:?}", entity1, entity2, flags)
+//             }
+//             CollisionEvent::Stopped(entity1, entity2, flags) => {
+//                 println!("Entity {:?} and {:?} stopped colliding: {:?}", entity1, entity2, flags)
+//             }
+//         }
+//     }
+// }

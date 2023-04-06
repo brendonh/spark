@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use heron::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 use crate::common::*;
 
@@ -11,37 +11,28 @@ pub fn make_planets_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn_bundle((
+    commands.spawn((
         Planet,
         Name::new("Earth"),
         Mass { value: 5.0 },
-        RigidBody::Static,
-        CollisionShape::Sphere {
-            radius: 3.0,
-        }
-    )).insert_bundle(
-        TransformBundle {
-            local: Transform {
-                translation: Vec3::new(0.0, 0.0, 0.0),
-                ..default()
-            },
-            ..default()
-        }
-    ).with_children(|parent| {
-        parent.spawn_bundle(
+        RigidBody::Fixed,
+        Collider::ball(3.0),
+        SpatialBundle::default(),
+    )).with_children(|parent| {
+        parent.spawn(
             PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Icosphere {
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                mesh: meshes.add(Mesh::try_from(shape::Icosphere {
                     radius: 3.0,
                     subdivisions: 32,
-                })),
+                }).unwrap()),
                 material: materials.add(StandardMaterial {
                     base_color: Color::hex("ffd891").unwrap(),
                     unlit: true,
                     ..default()
                 }),
                 ..default()
-            }
-        );
+            });
     });
 
 }
@@ -53,11 +44,11 @@ pub fn apply_gravity(
 ) {
     for (mass, planet_pos) in planets.iter() {
         for (mut velocity, ship_pos) in orbitals.iter_mut() {
-            let vector = planet_pos.translation - ship_pos.translation;
+            let vector = planet_pos.translation() - ship_pos.translation();
             let gravity = mass.value / vector.length_squared();
 
             // This is silly
-            velocity.linear += vector.normalize() * gravity;
+            velocity.linvel += vector.normalize() * gravity;
 
         }
     }

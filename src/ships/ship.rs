@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use heron::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 use super::tiles::TileSet;
 use crate::common::Orbital;
@@ -10,30 +10,33 @@ pub struct Ship;
 pub fn make_ships_system(
     mut commands: Commands,
 ) {
-    commands.spawn_bundle((
+    commands.spawn((
         Ship,
         Orbital,
         Name::new("Player"),
         TileSet::from(vec![(0, 1), (1, 1), (1, 0)]),
         RigidBody::Dynamic,
         Velocity {
-            linear: Vec3::X * -4.3,
+            linvel: Vec3::X * -4.3,
             ..default()
         },
-        PhysicMaterial {
-            restitution: 1.0,
-            density: 1.0,
-            friction: 0.0,
-        }
-    )).insert_bundle(
-        TransformBundle {
-            local: Transform {
+        ColliderMassProperties::Density(1.0),
+        Restitution{
+            coefficient: 1.0,
+            combine_rule: CoefficientCombineRule::Min
+        },
+        Friction {
+            coefficient: 0.0,
+            combine_rule: CoefficientCombineRule::Min
+        },
+        SpatialBundle{
+            transform: Transform {
                 translation: Vec3::new(0.0, 10.0, 0.0),
                 ..default()
             },
             ..default()
         }
-    );
+    ));
 
     // commands.spawn_bundle((
     //     Ship,

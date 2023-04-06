@@ -6,7 +6,7 @@ use bevy::{
     reflect::TypeUuid,
 };
 
-use heron::prelude::*;
+use bevy_rapier3d::prelude::*;
 
 type Pos = (i32, i32);
 
@@ -86,20 +86,15 @@ pub fn make_tiles_system(
 
             let (x, y) = tile.pos;
 
-            let tile = commands.spawn_bundle((
+            let tile = commands.spawn((
                 TileMarker,
-                CollisionShape::Cuboid {
-                    half_extends: Vec3::new( 0.5, 0.5, 0.0 ),
-                    border_radius: None,
-                }
-            )
-            ).insert_bundle(
-                TransformBundle {
-                    local: Transform::from_xyz(x as f32, y as f32, 0.0),
+                Collider::cuboid(1.0, 1.0, 1.0),
+                SpatialBundle {
+                    transform: Transform::from_xyz(x as f32, y as f32, 0.0),
                     ..default()
                 }
-            ).with_children(|parent| {
-                parent.spawn_bundle(
+            )).with_children(|parent| {
+                parent.spawn(
                     PbrBundle {
                         mesh: tile_parts.mesh.clone(),
                         material: tile_parts.materials.get("gray").unwrap().clone(),

@@ -5,6 +5,5 @@ authors = ["Brendon Hogger <brendonh@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.7", features = ["dynamic"] }
-heron = { version = "3.0.0", features = ["2d"] }
-#bevy_rapier2d = { version = "0.12.1", features = [ "simd-stable" ] }
+bevy = { version = "0.10.1", features = ["dynamic_linking"] }
+bevy_rapier3d = { version = "0.21.0", features = [ "simd-stable" ] }
