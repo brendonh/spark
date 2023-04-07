@@ -5,13 +5,18 @@ use bevy::{
         ButtonState,
         keyboard::KeyboardInput,
     },
+    time::common_conditions::on_timer,
+    utils::Duration,
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
 };
 
-use bevy_rapier3d::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 mod common;
 mod ships;
 mod planets;
+
+const TIMESTEP: f32 = 1.0 / 120.0;
 
 fn main() {
 
@@ -25,8 +30,19 @@ fn main() {
             ..default()
         }))
 
-        //.add_plugins(DefaultPlugins)
+        .insert_resource(FixedTime::new_from_secs(TIMESTEP))
+
         .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
+
+        .insert_resource(RapierConfiguration{
+            gravity: Vec2::ZERO,
+            timestep_mode: TimestepMode::Interpolated {
+                dt: TIMESTEP,
+                time_scale: 1.0,
+                substeps: 1
+            },
+            ..default()
+        })
 
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
 
@@ -36,9 +52,15 @@ fn main() {
 
         .add_system(ships::tiles::make_tiles_system)
 
-        .add_system(planets::planet::apply_gravity)
+        .add_system(planets::planet::apply_gravity.in_schedule(CoreSchedule::FixedUpdate))
 
         .add_system(exit_on_esc_system)
+
+        .add_system(planets::planet::log_distances.run_if(on_timer(Duration::from_secs_f32(0.5))))
+
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+
 //        .add_system(print_events)
         .run();
 }
@@ -60,7 +82,7 @@ fn setup(
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 0.0, 100.0).looking_at(Vec3::default(), Vec3::Y),
         projection: OrthographicProjection {
-            scale: 30.0,
+            scale: 50.0,
             scaling_mode: bevy::render::camera::ScalingMode::FixedVertical(1.0),
             ..default()
         }.into(),

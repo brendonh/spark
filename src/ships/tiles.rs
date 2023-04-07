@@ -6,7 +6,7 @@ use bevy::{
     reflect::TypeUuid,
 };
 
-use bevy_rapier3d::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 type Pos = (i32, i32);
 
@@ -88,7 +88,7 @@ pub fn make_tiles_system(
 
             let tile = commands.spawn((
                 TileMarker,
-                Collider::cuboid(1.0, 1.0, 1.0),
+                Collider::cuboid(0.5, 0.5),
                 SpatialBundle {
                     transform: Transform::from_xyz(x as f32, y as f32, 0.0),
                     ..default()

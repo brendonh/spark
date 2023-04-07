@@ -1,8 +1,8 @@
 use bevy::prelude::*;
-use bevy_rapier3d::prelude::*;
+use bevy_rapier2d::prelude::*;
 
 use super::tiles::TileSet;
-use crate::common::Orbital;
+use crate::common::{Orbital, Mass, G};
 
 #[derive(Component)]
 pub struct Ship;
@@ -10,14 +10,18 @@ pub struct Ship;
 pub fn make_ships_system(
     mut commands: Commands,
 ) {
+
+    let orbit_speed = (G * 5000000000000.0  / 15.0).sqrt();
+    info!("Orbit speed: {:?}", orbit_speed);
     commands.spawn((
         Ship,
         Orbital,
         Name::new("Player"),
         TileSet::from(vec![(0, 1), (1, 1), (1, 0)]),
         RigidBody::Dynamic,
+        Mass { value: 1.0 },
         Velocity {
-            linvel: Vec3::X * -4.3,
+            linvel: Vec2::new(orbit_speed, 0.0),
             ..default()
         },
         ColliderMassProperties::Density(1.0),
@@ -31,7 +35,7 @@ pub fn make_ships_system(
         },
         SpatialBundle{
             transform: Transform {
-                translation: Vec3::new(0.0, 10.0, 0.0),
+                translation: Vec3::new(0.0, 15.0, 0.0),
                 ..default()
             },
             ..default()
