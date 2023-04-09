@@ -14,9 +14,9 @@ pub fn make_planets_system(
     commands.spawn((
         Planet,
         Name::new("Earth"),
-        Mass { value: 5000000000000000.0 },
+        Mass { value: 2500000000000000.0 },
         RigidBody::Fixed,
-        Collider::ball(50.0),
+        Collider::ball(20.0),
         SpatialBundle {
             transform: Transform {
                 translation: Vec3::new(0.0, 0.0, 0.0),
@@ -28,7 +28,7 @@ pub fn make_planets_system(
         parent.spawn(
             PbrBundle {
                 mesh: meshes.add(Mesh::try_from(shape::Circle {
-                    radius: 50.0,
+                    radius: 20.0,
                     vertices: 128,
                 }).unwrap()),
                 material: materials.add(StandardMaterial {

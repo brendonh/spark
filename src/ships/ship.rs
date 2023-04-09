@@ -1,3 +1,5 @@
+use std::f32::consts::*;
+
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -11,8 +13,9 @@ pub struct Ship;
 pub fn make_ships_system(
     mut commands: Commands
 ) {
-    let orbit_speed = (G * 5000000000000000.0  / 55.0).sqrt();
+    let orbit_speed = (G * 2500000000000000.0 / 50.0).sqrt();
     info!("Orbit speed: {:?}", orbit_speed);
+    let component_speed = FRAC_PI_4.sin() * (orbit_speed + 5.0);
     commands.spawn((
         Ship,
         Orbital,
@@ -21,7 +24,7 @@ pub fn make_ships_system(
         RigidBody::Dynamic,
         Mass { value: 1.0 },
         Velocity {
-            linvel: Vec2::new(orbit_speed + 5.0, -5.0),
+            linvel: Vec2::new(component_speed, component_speed),
             ..default()
         },
         ColliderMassProperties::Density(1.0),
@@ -35,7 +38,7 @@ pub fn make_ships_system(
         },
         SpatialBundle{
             transform: Transform {
-                translation: Vec3::new(10.0, -60.0, 0.0),
+                translation: Vec3::new(35.35533905932737, -35.35533905932737, 0.0),
                 ..default()
             },
             ..default()

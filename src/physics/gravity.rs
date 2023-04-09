@@ -1,5 +1,3 @@
-use std::f32::consts::*;
-
 use bevy::prelude::*;
 use bevy_rapier2d::prelude::*;
 
@@ -11,6 +9,16 @@ use crate::render::lines::*;
 
 #[derive(Component)]
 pub struct Orbital;
+
+#[derive(Component)]
+pub struct OrbitPath {
+    parent: Entity
+}
+
+#[derive(Component)]
+pub struct OrbitMarker {
+    parent: Entity
+}
 
 pub fn add_gravity(
     mut commands: Commands,
@@ -59,20 +67,22 @@ pub fn log_distances(
 
 pub fn calc_orbits(
     mut commands: Commands,
+    time: Res<Time>,
     planets: Query<(Entity, &GlobalTransform, &Mass), With<Planet>>,
-    orbitals: Query<(Entity, &GlobalTransform, &Velocity), Added<Orbital>>
+    orbitals: Query<(Entity, &GlobalTransform, &Velocity), Added<Orbital>>,
 ) {
-    let (planet, planet_pos, planet_mass) = planets.single();
+    let (planet, planet_transform, planet_mass) = planets.single();
 
-    for (ship, ship_pos, ship_vel) in orbitals.iter() {
-        let r = ship_pos.translation() - planet_pos.translation();
+    for (ship, ship_transform, ship_vel) in orbitals.iter() {
+        let ship_pos = ship_transform.translation();
+        let planet_pos = planet_transform.translation();
+
+        let r = ship_pos - planet_pos;
         let v = Vec3::new(ship_vel.linvel.x, ship_vel.linvel.y, 0.0);
 
-        info!("Relative ship pos: {:?}", ship_pos.translation());
+        info!("Relative ship pos: {:?}", ship_pos);
 
-
-        let mut orbit = orbit_from_initial(r, v, planet_mass.value);
-        orbit.planet = planet;
+        let orbit = orbit_from_initial(r, v, planet_mass.value, planet, planet_pos, time.raw_elapsed());
         commands.entity(ship).insert(orbit);
     }
 }
@@ -82,31 +92,53 @@ pub fn render_orbits(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<LineMaterial>>,
-    orbits: Query<&Orbit, Changed<Orbit>>
+    orbits: Query<(Entity, &Orbit), Added<Orbit>>
 ) {
-    for orbit in orbits.iter() {
+    for (entity, orbit) in orbits.iter() {
         let c = orbit.eccentricity * orbit.semimajor;
-        let semiminor = orbit.semimajor * (1.0 - orbit.eccentricity.powi(2)).sqrt();
-
         let periapsis = orbit.semimajor - c;
         let apoapsis = orbit.semimajor * 2.0 - periapsis;
 
-        info!("Orbit: {:?}, {:?}, {:?}", periapsis, apoapsis, orbit.argument);
+        info!("Orbit: {:?}, {:?}, {:?}", periapsis, apoapsis, orbit.argument.to_degrees());
 
-        commands.spawn(MaterialMeshBundle {
-            mesh: meshes.add(Mesh::from(LineStrip {
-                points: vec![
-                    Vec3::new(0.0, -periapsis, 0.0),
-                    Vec3::new(0.0, apoapsis, 0.0),
-                ],
-            })),
-            transform: Transform {
-                rotation: Quat::from_rotation_z(orbit.argument + FRAC_PI_2),
+        let points = orbit_to_points(orbit, 128);
+
+        commands.spawn((
+            OrbitPath{ parent: entity },
+            MaterialMeshBundle {
+                mesh: meshes.add(Mesh::from(LineStrip {
+                    points: points,
+                })),
+                material: materials.add(LineMaterial { color: Color::GREEN }),
                 ..default()
-            },
-            material: materials.add(LineMaterial { color: Color::GREEN }),
-            ..default()
-        });
+            }));
 
+        commands.spawn((
+            OrbitMarker{ parent: entity },
+            MaterialMeshBundle {
+                mesh: meshes.add(shape::Circle::new(0.5).into()).into(),
+                material: materials.add(LineMaterial { color: Color::RED }),
+                transform: Transform::from_translation(Vec3::new(0., 0., 0.)),
+                ..default()
+            }
+        ));
+
+    }
+}
+
+
+pub fn update_orbit_positions(
+    time: Res<Time>,
+    orbits: Query<&Orbit>,
+    mut markers: Query<(&OrbitMarker, &mut Transform)>
+) {
+    for (marker, mut transform) in markers.iter_mut() {
+        if let Ok(orbit) = orbits.get(marker.parent) {
+            let time_offset = time.raw_elapsed() - orbit.initial_time;
+            let (x, y, z) = calculate_position_at_time(orbit, time_offset.as_secs_f32());
+            transform.translation = Vec3::new(x, z, 0.);
+        } else {
+            error!("No orbit! {:?}", marker.parent);
+        }
     }
 }

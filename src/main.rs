@@ -46,6 +46,7 @@ fn main() {
         .add_system(physics::gravity::add_gravity)
         .add_system(physics::gravity::calc_orbits)
         .add_system(physics::gravity::render_orbits)
+        .add_system(physics::gravity::update_orbit_positions)
 
         .add_system(physics::gravity::apply_gravity.before(bevy_rapier2d::plugin::PhysicsSet::StepSimulation))
 
